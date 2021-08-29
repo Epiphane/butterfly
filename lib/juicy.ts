@@ -31,32 +31,30 @@ interface KeyNameToCodeMap {
 };
 
 class Game {
-    #scale = new Point(1);
+    private scale = new Point(1);
     mouse = new Point();
-    #running: boolean = false;
-    #state!: State;
-    #lastTime: number = 0;
+    private running: boolean = false;
+    private state!: State;
+    private lastTime: number = 0;
 
-    #canvas?: HTMLCanvasElement;
-    #context: CanvasRenderingContext2D | null = null;
+    private canvas?: HTMLCanvasElement;
+    private context: CanvasRenderingContext2D | null = null;
 
-    width: number = 0;
-    height: number = 0;
+    size = new Point();
 
-    #KEYS: KeyNameToCodeMap = {};
-    #CODES: { [key: number]: string } = {};
+    private KEYS: KeyNameToCodeMap = {};
+    private CODES: { [key: number]: string } = {};
 
-    #keyState: { [key: number]: boolean } = {};
-    #listener: { [key: string]: EventListener } = {};
+    private keyState: { [key: number]: boolean } = {};
+    private listener: { [key: string]: EventListener } = {};
 
-    #debug?: HTMLElement;
-    #fps: number = 0;
-    #fpsAlpha: number = 0.95;
+    private debug?: HTMLElement;
+    private fps: number = 0;
+    private fpsAlpha: number = 0.95;
 
     init(canvas: HTMLCanvasElement | string, width: number, height: number, keys: KeyNameToCodeMap) {
-        this.width = width;
-        this.height = height;
-        this.#state = new State();
+        this.size = new Point(width, height);
+        this.state = new State();
 
         let canv: HTMLCanvasElement;
         if (canvas instanceof HTMLCanvasElement) {
@@ -75,25 +73,25 @@ class Game {
         this.setCanvas(canv);
 
         // Input stuff
-        this.#KEYS = keys || {};
-        this.#CODES = {};
+        this.KEYS = keys || {};
+        this.CODES = {};
         for (const key in keys) {
-            this.#CODES[keys[key]] = key;
+            this.CODES[keys[key]] = key;
         }
 
         // document hooks
         document.onkeydown = (evt) => {
-            this.#keyState[evt.keyCode] = true;
+            this.keyState[evt.keyCode] = true;
         };
         document.onkeyup = (evt) => {
-            this.#keyState[evt.keyCode] = false;
+            this.keyState[evt.keyCode] = false;
 
             this.trigger('keypress', evt);
 
-            const method = 'key_' + this.#CODES[evt.keyCode];
-            const state = this.#state as any;
+            const method = 'key_' + this.CODES[evt.keyCode];
+            const state = this.state as any;
             if (state && state[method]) {
-                state[method](this.#CODES[evt.keyCode]);
+                state[method](this.CODES[evt.keyCode]);
             }
         };
 
@@ -101,24 +99,24 @@ class Game {
     }
 
     clear() {
-        for (const action in this.#listener) {
-            document.removeEventListener(action, this.#listener[action]);
+        for (const action in this.listener) {
+            document.removeEventListener(action, this.listener[action]);
         }
-        this.#listener = {};
+        this.listener = {};
     }
 
     setDebug(debug?: HTMLElement) {
-        this.#debug = debug;
+        this.debug = debug;
         return this; // Enable chaining
     }
 
     setCanvas(canvas: HTMLCanvasElement) {
-        this.#canvas = canvas;
-        this.#context = canvas.getContext('2d');
+        this.canvas = canvas;
+        this.context = canvas.getContext('2d');
         
-        canvas.style.width = `${this.width}px`;
-        canvas.style.height = `${this.height}px`;
-        SetCanvasSize(this.#canvas, this.width, this.height);
+        canvas.style.width = `${this.size.x}px`;
+        canvas.style.height = `${this.size.y}px`;
+        SetCanvasSize(this.canvas, this.size.x, this.size.y);
 
         let startDrag: MouseEvent | undefined;
         canvas.onmousedown = (evt: MouseEvent) => {
@@ -154,36 +152,36 @@ class Game {
     }
     
     getCanvasCoords(evt: MouseEvent) {
-        if (!this.#canvas) {
+        if (!this.canvas) {
             throw Error('Game was not properly initialized - canvas is unavailable');
         }
 
-        const canvasRect = this.#canvas.getBoundingClientRect();
+        const canvasRect = this.canvas.getBoundingClientRect();
         const mx = evt.clientX - canvasRect.left;
         const my = evt.clientY - canvasRect.top;
 
-        return new Point(mx / this.#canvas.width * 2 - 1, 1 - my / this.#canvas.height * 2);
+        return new Point(mx, my);
     }
 
     resize() {
-        if (!this.#canvas) {
+        if (!this.canvas) {
             throw Error('Game was not properly initialized - canvas is unavailable');
         }
 
-        // const parent = this.#canvas.parentElement;
-        // const width = parent ? parent.clientWidth : this.#canvas.clientWidth;
-        // const height = parent ? parent.clientHeight : this.#canvas.clientHeight;
+        // const parent = this.canvas.parentElement;
+        // const width = parent ? parent.clientWidth : this.canvas.clientWidth;
+        // const height = parent ? parent.clientHeight : this.canvas.clientHeight;
 
-        // this.#canvas.width = width;
-        // this.#canvas.height = width * this.height / this.width;
-        // if (this.#canvas.height > height) {
-        //     this.#canvas.height = height;
-        //     this.#canvas.width = height * this.width / this.height;
+        // this.canvas.width = width;
+        // this.canvas.height = width * this.height / this.width;
+        // if (this.canvas.height > height) {
+        //     this.canvas.height = height;
+        //     this.canvas.width = height * this.width / this.height;
         // }
 
         // Make sure we re-render
-        if (this.#state) {
-            this.#state.hasRendered = false;
+        if (this.state) {
+            this.state.hasRendered = false;
         }
 
         return this; // Enable chaining
@@ -191,7 +189,7 @@ class Game {
 
     keyDown(key: string | string[]) {
         if (typeof (key) === 'string') {
-            return this.#keyState[this.#KEYS[key]];
+            return this.keyState[this.KEYS[key]];
         }
         else {
             for (let k = 0; k < key.length; k++) {
@@ -204,7 +202,7 @@ class Game {
     }
 
     trigger(evt: string, data: any) {
-        const state = this.#state as any;
+        const state = this.state as any;
         if (state && state[evt]) {
             state[evt](data);
         }
@@ -223,17 +221,17 @@ class Game {
             for (let i = 0; i < keys.length; i++) {
                 const key = keys[i];
 
-                (this.#state as any)['key_' + key] = callback;
+                (this.state as any)['key_' + key] = callback;
             }
         }
         else {
             callback = keys as any as EventListener;
-            if (this.#listener[action]) {
-                document.removeEventListener(action, this.#listener[action]);
+            if (this.listener[action]) {
+                document.removeEventListener(action, this.listener[action]);
             }
 
-            this.#listener[action] = callback;
-            document.addEventListener(action, this.#listener[action]);
+            this.listener[action] = callback;
+            document.addEventListener(action, this.listener[action]);
         }
 
         return this; // Enable chaining
@@ -242,46 +240,46 @@ class Game {
     setState(state: State) {
         this.clear();
 
-        this.#state = state;
-        this.#state.game = this;
-        this.#state.init();
-        this.#state.hasRendered = false;
+        this.state = state;
+        this.state.game = this;
+        this.state.init();
+        this.state.hasRendered = false;
 
         return this; // Enable chaining
     }
 
-    #updateFn = () => this.update();
+    private updateFn = () => this.update();
 
     update() {
-        if (!this.#running) {
+        if (!this.running) {
             return;
         }
 
-        requestAnimationFrame(this.#updateFn);
+        requestAnimationFrame(this.updateFn);
         const nextTime = new Date().getTime();
 
-        if (this.#debug && nextTime !== this.#lastTime) {
-            var fps = 1000 / (nextTime - this.#lastTime);
-            this.#fps = this.#fpsAlpha * this.#fps + (1 - this.#fpsAlpha) * fps;
+        if (this.debug && nextTime !== this.lastTime) {
+            var fps = 1000 / (nextTime - this.lastTime);
+            this.fps = this.fpsAlpha * this.fps + (1 - this.fpsAlpha) * fps;
 
-            this.#debug.innerHTML = 'FPS: ' + Math.floor(this.#fps);
+            this.debug.innerHTML = 'FPS: ' + Math.floor(this.fps);
         }
 
-        const dt = (nextTime - this.#lastTime) / 1000;
+        const dt = (nextTime - this.lastTime) / 1000;
         if (dt > 0.2) {
-            this.#lastTime = nextTime;
+            this.lastTime = nextTime;
             return;
         }
 
         try {
-            const updated = !this.#state.update(dt) || this.#state.updated;
-            this.#state.updated = false;
+            const updated = !this.state.update(dt) || this.state.updated;
+            this.state.updated = false;
 
-            this.#lastTime = nextTime;
+            this.lastTime = nextTime;
 
-            if (updated || !this.#state.hasRendered) {
+            if (updated || !this.state.hasRendered) {
                 this.render();
-                this.#state.hasRendered = true;
+                this.state.hasRendered = true;
             }
         }
         catch (e) {
@@ -291,28 +289,28 @@ class Game {
     }
 
     render() {
-        if (!this.#context || !this.#canvas) {
-            this.#running = false;
+        if (!this.context || !this.canvas) {
+            this.running = false;
             throw Error('Game was not properly initialized - canvas is unavailable');
         }
 
-        this.#context.save();
+        this.context.save();
   
-        this.#context.scale(this.#scale.x, this.#scale.y);
-        if (!this.#state.stopClear) {
-           this.#context.clearRect(0, 0, this.width, this.height);
+        this.context.scale(this.scale.x, this.scale.y);
+        if (!this.state.stopClear) {
+           this.context.clearRect(0, 0, this.size.x, this.size.y);
         }
   
-        this.#state.render(this.#context, this.#canvas.width, this.#canvas.height);
+        this.state.render(this.context, this.canvas.width, this.canvas.height);
   
-        this.#context.restore();
+        this.context.restore();
 
         return this; // Enable chaining
     }
 
     run() {
-        this.#running = true;
-        this.#lastTime = new Date().getTime();
+        this.running = true;
+        this.lastTime = new Date().getTime();
 
         this.update();
 
@@ -320,7 +318,7 @@ class Game {
     };
 
     pause() {
-        this.#running = false;
+        this.running = false;
     }
 }
 
@@ -374,7 +372,28 @@ export class State {
         this.entities.push(e);
     }
 
+    get(name: string): Entity | undefined {
+        const matches = this.entities.filter(e => e.name === name);
+        if (matches.length) {
+            return matches[0];
+        }
+    }
+
+    remove(nameOrEntity: Entity | string) {
+        if (typeof(nameOrEntity) === 'string') {
+            this.entities = this.entities.filter(e => e.name !== nameOrEntity);
+        }
+        else {
+            this.entities = this.entities.filter(e => e !== nameOrEntity);
+        }
+    }
+
     click(pos: Point) {
+        this.entities.forEach(e => {
+            if (e.contains(pos)) {
+                e.click(pos);
+            }
+        });
     }
 };
 
@@ -397,6 +416,7 @@ export class Entity {
 
     props: { [key: string]: any } = {};
     visible: boolean = true;
+    name?: string;
 
     position: Point = new Point();
     scale: Point = new Point(1);
@@ -409,11 +429,17 @@ export class Entity {
     parent?: Entity;
     children: Entity[] = [];
 
-    constructor(state: State, components?: (Component | (new () => Component))[]) {
+    constructor(state: State, name?: string, components?: (Component | (new () => Component))[]) {
+        if (typeof(name) !== 'string') {
+            components = name;
+            name = undefined;
+        }
+
+        this.name = name;
+        this.state = state;
+        
         components = (components || []).concat(this.initialComponents());
         components.forEach(c => this.addComponent(c));
-
-        this.state = state;
         state.add(this);
 
         this.init();
@@ -505,6 +531,10 @@ export class Entity {
         this.children.push(child);
     }
 
+    click(pos: Point) {
+        this.components.forEach(c => c.click(pos));
+    }
+
     update<C extends Component>(dt: number, constructor?: (new () => C)) {
         if (constructor) {
             for (let i = 0; i < this.components.length; i++) {
@@ -570,21 +600,24 @@ export class Component {
     entity!: Entity;
 
     init(e: Entity) { }
+    click(pos: Point) {}
     update(dt: number, game: Game) { }
     render(context: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) { }
 }
 
+export type Color = string | CanvasGradient | CanvasPattern;
+
 /* -------------------- Typical Components --------------- */
 export class ImageComponent extends Component {
-    #tint: string | CanvasGradient | CanvasPattern | undefined;
+    private tint?: Color;
     opacity: number = 1;
     image: HTMLImageElement = new Image();
 
-    width: number | undefined;
-    height: number | undefined;
+    width?: number;
+    height?: number;
 
-    onload: ((img: ImageComponent) => void) | undefined;
-    #canvas: HTMLCanvasElement | undefined;
+    onload?: ((img: ImageComponent) => void);
+    canvas?: HTMLCanvasElement;
 
     init(entity: Entity) {
         this.opacity = 1;
@@ -595,8 +628,8 @@ export class ImageComponent extends Component {
                 entity.height = this.image.height;
             }
 
-            if (this.#tint) {
-                this.setTint(this.#tint);
+            if (this.tint) {
+                this.setTint(this.tint);
             }
 
             if (this.onload) {
@@ -610,22 +643,22 @@ export class ImageComponent extends Component {
         }
     }
 
-    setTint(tint: string | CanvasGradient | CanvasPattern) {
+    setTint(tint: Color) {
         // TODO glean alpha of tint
-        this.#tint = tint;
+        this.tint = tint;
 
         if (this.image.complete) {
             // Apply tint
-            this.#canvas = this.#canvas || document.createElement('canvas');
-            SetCanvasSize(this.#canvas, this.image.width, this.image.height);
+            this.canvas = this.canvas || document.createElement('canvas');
+            SetCanvasSize(this.canvas, this.image.width, this.image.height);
 
-            const context = this.#canvas.getContext('2d');
+            const context = this.canvas.getContext('2d');
             if (!context) {
                 throw Error('Failed getting image context');
             }
 
-            context.fillStyle = this.#tint;
-            context.fillRect(0, 0, this.#canvas.width, this.#canvas.height);
+            context.fillStyle = this.tint;
+            context.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
             // destination atop makes a result with an alpha channel identical to fg,
             // but with all pixels retaining their original color *as far as I can tell*
@@ -650,8 +683,8 @@ export class ImageComponent extends Component {
         context.globalAlpha = this.opacity;
         context.drawImage(this.image, x, y, w, h);
 
-        if (this.#tint && this.#canvas) {
-            context.drawImage(this.#canvas, x, y, w, h);
+        if (this.tint && this.canvas) {
+            context.drawImage(this.canvas, x, y, w, h);
         }
 
         // Restore original global alpha
@@ -660,9 +693,9 @@ export class ImageComponent extends Component {
 }
 
 export class BoxComponent extends Component {
-    fillStyle: string | CanvasGradient | CanvasPattern = 'white';
+    fillStyle: Color = 'white';
 
-    setFillStyle(style: string | CanvasGradient | CanvasPattern) {
+    setFillStyle(style: Color) {
         this.fillStyle = style;
     }
 
@@ -676,18 +709,20 @@ export interface TextInfo {
     font: string;
     size: number;
     text: string;
-    fillStyle: string | CanvasGradient | CanvasPattern;
+    fillStyle: Color;
+    padding: Point;
 }
 
 export class TextComponent extends Component {
-    #canvas: HTMLCanvasElement;
-    #context: CanvasRenderingContext2D;
+    canvas: HTMLCanvasElement;
+    context: CanvasRenderingContext2D;
 
     textInfo: TextInfo = {
         font: 'Arial',
         size: 32,
         text: '',
         fillStyle: 'white',
+        padding: new Point()
     };
     opacity: number = 1;
     ready: boolean = false;
@@ -695,8 +730,8 @@ export class TextComponent extends Component {
     constructor() {
         super();
 
-        this.#canvas = document.createElement('canvas');
-        this.#context = this.#canvas.getContext('2d') as CanvasRenderingContext2D;
+        this.canvas = document.createElement('canvas');
+        this.context = this.canvas.getContext('2d') as CanvasRenderingContext2D;
     }
 
     set(config: Partial<TextInfo>): Promise<void> {
@@ -708,7 +743,7 @@ export class TextComponent extends Component {
         // Set attributes
         Object.assign(this.textInfo, config);
 
-        const font = `${this.textInfo.size}px ${this.textInfo.font}`;
+        const font = this.getFont();
         const fonts = (document as any).fonts;
         if (fonts && !fonts.check(font)) {
             return fonts.load(font).then(() => {
@@ -723,27 +758,34 @@ export class TextComponent extends Component {
         }
     }
 
+    getFont() {
+        return `${this.textInfo.size}px ${this.textInfo.font}`;
+    }
+
+    measure() {
+        this.context.font = this.getFont();
+        const size = this.context.measureText(this.textInfo.text);
+        return new Point(Math.ceil(size.width), Math.ceil(this.textInfo.size));
+    }
+
     renderOffscreen() {
         // Measure the text size
-        const font = `${this.textInfo.size}px ${this.textInfo.font}`;
         const entity = this.entity;
-        const context = this.#context;
-        const canvas = this.#canvas;
-
-        context.font = font;
-        context.fillStyle = this.textInfo.fillStyle;
-        const size = context.measureText(this.textInfo.text);
+        const context = this.context;
+        const canvas = this.canvas;
+        const size = this.measure();
+        const { fillStyle, text, padding } = this.textInfo;
 
         // Resize canvas
-        entity.width = Math.ceil(size.width);
-        entity.height = Math.ceil(this.textInfo.size * 5 / 3);
+        entity.width = size.x + padding.x * 2;
+        entity.height = size.y + padding.y * 2;
         SetCanvasSize(canvas, entity.width, entity.height);
 
         // Draw text
         context.textBaseline = 'top';
-        context.font = font;
-        context.fillStyle = this.textInfo.fillStyle;
-        context.fillText(this.textInfo.text, 0, 0);
+        context.font = this.getFont();
+        context.fillStyle = fillStyle;
+        context.fillText(text, padding.x, padding.y);
     }
 
     render(context: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
@@ -751,8 +793,8 @@ export class TextComponent extends Component {
         const originalAlpha = context.globalAlpha;
         context.globalAlpha = this.opacity;
 
-        arguments[0] = this.#canvas;
-        context.drawImage(this.#canvas, x, y, w, h);
+        arguments[0] = this.canvas;
+        context.drawImage(this.canvas, x, y, w, h);
 
         context.globalAlpha = originalAlpha;
     }
