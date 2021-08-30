@@ -5,6 +5,7 @@ import { Occupant } from "../helpers/occupant";
 import Level, { Option } from "./level";
 import { LevelData, Levels, ModalFunction } from "../levels/level_data";
 import SandboxLevel from "./sandbox";
+import { Tile } from "../helpers/tile";
 
 export default class CustomLevel extends Level {
     level: number;
@@ -16,16 +17,32 @@ export default class CustomLevel extends Level {
 
         this.level = level;
         this.data = data;
+        this.name.set({ text: `${level + 1}: ${data.name}` });
     }
 
     fillMap() {
+        this.expectedTiles = 
+            new Array(this.size.y).fill(false).map(() => 
+            new Array(this.size.x).fill(Tile.Grass));
+        this.expectedOcpts = 
+            new Array(this.size.y).fill(false).map(() => 
+            new Array(this.size.x).fill(Occupant.None));
+
         if (this.data.expectedTiles) {
             this.expectedTiles = this.data.expectedTiles;
         }
 
-        this.expectedOcpts = 
-            new Array(this.size.y).fill(false).map(() => 
-            new Array(this.size.x).fill(Occupant.None));
+        if (this.data.expectedOcpts) {
+            this.expectedOcpts = this.data.expectedOcpts;
+        }
+
+        if (this.data.initialTiles) {
+            this.tiles = this.data.initialTiles;
+        }
+
+        if (this.data.initialOcpts) {
+            this.ocpts = this.data.initialOcpts;
+        }
     }
 
     getOptions(): Option[] {

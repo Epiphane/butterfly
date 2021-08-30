@@ -15,7 +15,7 @@ export type Option = {
     type: 'Tile' | 'Occupant';
     value: Tile | Occupant;
     count: number;
-}
+} | undefined;
 
 export default class Level extends State {
     tileHelper = new TileHelper();
@@ -28,6 +28,7 @@ export default class Level extends State {
 
     private tile_size = 32;
 
+    protected name: TextComponent
     protected scale: number;
     protected size: Point;
 
@@ -52,6 +53,14 @@ export default class Level extends State {
         this.expectedOcpts = new Array(this.size.y).fill(false).map(() => 
                         new Array(this.size.x).fill(Occupant.None));
 
+        const title = new Entity(this, 'Name', [TextComponent]);
+        this.name = title.get(TextComponent)!;
+        this.name.set({
+            font: 'Poiret One',
+            size: 48,
+            text: ' ',
+        });
+
         const skip = new Entity(this, 'Skip', [ButtonComponent, BoxComponent, TextComponent]);
         skip.get(TextComponent)?.set({
             font: 'Poiret One',
@@ -64,19 +73,6 @@ export default class Level extends State {
         skip.position.x = 20;
         skip.position.y = this.game.size.y - skip.height - 20;
 
-        const button = new Entity(this, 'Advance Button', [ButtonComponent, BoxComponent, TextComponent]);
-        button.get(TextComponent)?.set({
-            font: 'Poiret One',
-            size: 32,
-            padding: new Point(20, 10),
-            text: 'Advance'
-        });
-        button.get(BoxComponent)?.setFillStyle('#00aa00');
-        button.get(ButtonComponent)?.onClick(() => this.advance());
-        button.position.x = this.game.size.x - button.width - 20;
-        button.position.y = 20;
-
-        this.counter.position.x = button.position.x;
         this.counter.position.y = 80;
         this.counter.get(TextComponent)?.set({
             font: 'Poiret One',
@@ -121,40 +117,6 @@ export default class Level extends State {
         });
 
         this.reset();
-    }
-
-    reset() {
-        this.selectedOption = -1;
-        this.tiles = new Array(this.size.y).fill(false).map(() => 
-                    new Array(this.size.x).fill(Tile.Grass));
-        this.ocpts = new Array(this.size.y).fill(false).map(() => 
-                        new Array(this.size.x).fill(Occupant.None));
-
-        this.gen = 0;
-        this.counter.get(TextComponent)?.set({ text: 'Gen 0' });
-
-        this.fillMap();
-
-        this.options.forEach(e => this.remove(e));
-        this.options = [];
-
-        const options = this.getOptions();
-        options.forEach((option, i) => {
-            const entity = new Entity(this, `Option ${i}`, [ButtonComponent]);
-            entity.position.x = this.options_root.x + (i * 1.25) * this.tile_size;
-            entity.position.y = this.options_root.y + (i * 1.5) * this.tile_size;
-            entity.width = this.tile_size;
-            entity.height = this.tile_size;
-            entity.props = { ...option };
-
-            entity.get(ButtonComponent)?.onClick(() => {
-                if (entity.props.count > 0) {
-                    this.selectedOption = i;
-                }
-            });
-
-            this.options.push(entity);
-        });
 
         const modal = this.getModal();
         if (modal) {
@@ -186,6 +148,56 @@ export default class Level extends State {
         }
     }
 
+    reset() {
+        this.done = false;
+        this.remove('Advance Button');
+        this.remove('Next Puzzle');
+        const button = new Entity(this, 'Advance Button', [ButtonComponent, BoxComponent, TextComponent]);
+        button.get(TextComponent)?.set({
+            font: 'Poiret One',
+            size: 32,
+            padding: new Point(20, 10),
+            text: 'Advance'
+        });
+        button.get(BoxComponent)?.setFillStyle('#00aa00');
+        button.get(ButtonComponent)?.onClick(() => this.advance());
+        button.position.x = this.game.size.x - button.width - 20;
+        button.position.y = 20;
+        this.counter.position.x = button.position.x;
+
+        this.selectedOption = -1;
+        this.tiles = new Array(this.size.y).fill(false).map(() => 
+                    new Array(this.size.x).fill(Tile.Grass));
+        this.ocpts = new Array(this.size.y).fill(false).map(() => 
+                        new Array(this.size.x).fill(Occupant.None));
+
+        this.gen = 0;
+        this.counter.get(TextComponent)?.set({ text: 'Gen 0' });
+
+        this.fillMap();
+
+        this.options.forEach(e => this.remove(e));
+        this.options = [];
+
+        const options = this.getOptions();
+        options.forEach((option, i) => {
+            const entity = new Entity(this, `Option ${i}`, [ButtonComponent]);
+            entity.position.x = this.options_root.x + (i * 1.25) * this.tile_size;
+            entity.position.y = this.options_root.y + (i * 1.5) * this.tile_size;
+            entity.width = this.tile_size;
+            entity.height = this.tile_size;
+            entity.props = { ...option };
+
+            entity.get(ButtonComponent)?.onClick(() => {
+                if (entity.props.count > 0) {
+                    this.selectedOption = i;
+                }
+            });
+
+            this.options.push(entity);
+        });
+    }
+
     fillMap() {}
 
     getOptions(): Option[] {
@@ -200,8 +212,10 @@ export default class Level extends State {
         super.update(dt);
 
         this.options.forEach((opt, i) => {
-            opt.position.x = this.options_root.x + (i * 1.25) * this.tile_size;
-            opt.position.y = this.options_root.y + (0 * 1.5) * this.tile_size;
+            const x = i % 4;
+            const y = Math.floor(i / 4);
+            opt.position.x = this.options_root.x + (x * 1.25) * this.tile_size;
+            opt.position.y = this.options_root.y + (y * 1.5) * this.tile_size;
         })
     }
 
@@ -209,7 +223,7 @@ export default class Level extends State {
         super.click(pos);
 
         const tileX = Math.floor(pos.x / (this.tile_size * this.scale));
-        const tileY = Math.floor(pos.y / (this.tile_size * this.scale));
+        const tileY = Math.floor((pos.y - 50) / (this.tile_size * this.scale));
         if (
             this.selectedOption >= 0 &&
             tileX >= 0 &&
@@ -218,17 +232,23 @@ export default class Level extends State {
             tileY < this.size.y
         ) {
             const option = this.options[this.selectedOption].props as Option;
+            if (option) {
+                if (option.type === 'Tile') {
+                    this.tiles[tileY][tileX] = option.value as Tile;
+                }
+                else {
+                    if (option.value === Occupant.Kill) {
+                        this.ocpts[tileY][tileX] = Occupant.None;
+                    }
+                    else {
+                        this.ocpts[tileY][tileX] = option.value as Occupant;
+                    }
+                }
 
-            if (option.type === 'Tile') {
-                this.tiles[tileY][tileX] = option.value as Tile;
-            }
-            else {
-                this.ocpts[tileY][tileX] = option.value as Occupant;
-            }
-
-            option.count--;
-            if (option.count === 0) {
-                this.selectedOption = -1;
+                option.count--;
+                if (option.count === 0) {
+                    this.selectedOption = -1;
+                }
             }
         }
     }
@@ -253,43 +273,148 @@ export default class Level extends State {
         const thisTile = this.tileAt(x, y);
         const thisOcpt = this.ocptAt(x, y);
 
-        let sums: { [key in Tile]: number } = {
-            [Tile.Grass]: 0,
-            [Tile.Flower]: 0,
-            [Tile.Water]: 0,
-            [Tile.Rock]: 0,
-            [Tile.Count]: -1,
-        };
-        let direct: { [key in Tile]: number } = { ...sums };
+        let tileSums: { [key: number]: number } = {};
+        for (let key in Tile) {
+            if (!isNaN(Number(key))) {
+                tileSums[key] = 0;
+            }
+        }
+        let directTileSums = { ...tileSums };
+
+        let ocptSums: { [key: number]: number } = {};
+        for (let key in Occupant) {
+            if (!isNaN(Number(key))) {
+                ocptSums[key] = 0;
+            }
+        }
+        let directOcptSums = { ...ocptSums };
 
         for (let i = x - 1; i <= x + 1; i++) {
             for (let j = y - 1; j <= y + 1; j++) {
                 if (i === x && j === y) continue;
 
-                sums[this.tileAt(i, j)]++;
+                tileSums[this.tileAt(i, j)]++;
+                ocptSums[this.ocptAt(i, j)]++;
 
                 if (i === x || j === y) {
-                    direct[this.tileAt(i, j)]++;
+                    directTileSums[this.tileAt(i, j)]++;
+                    directOcptSums[this.ocptAt(i, j)]++;
                 }
             }
         }
 
-        if (thisOcpt === Occupant.None) {
-            if (thisTile === Tile.Grass) {
-                if (sums[Tile.Water] > 0 &&
-                    sums[Tile.Flower] < 3
-                ) {
-                    return [Tile.Flower, thisOcpt];
+        // const wheaties = 
+        //     directOcptSums[Occupant.WheatSeed] +
+        //     directOcptSums[Occupant.WheatSprout] + 
+        //     directOcptSums[Occupant.WheatGrowing] + 
+        //     directOcptSums[Occupant.Wheat];
+
+        switch (thisTile) {
+            case Tile.Grass:
+                if (tileSums[Tile.Sand] > 0) {
+                    return [Tile.Dirt, thisOcpt];
                 }
-            }
-            else if (thisTile === Tile.Flower) {
-                if (sums[Tile.Water] === 0 ||
-                    sums[Tile.Flower] > 3
-                ) {
-                    return [Tile.Grass, thisOcpt];
+
+                switch (thisOcpt) {
+                    case Occupant.None:
+                        if (tileSums[Tile.Water] > 0 &&
+                            ocptSums[Occupant.Flower] < 3) {
+                            return [thisTile, Occupant.Flower];
+                        }
+                        break;
+                    case Occupant.Flower:
+                        if (tileSums[Tile.Water] === 0 ||
+                            ocptSums[Occupant.Flower] > 3) {
+                            return [thisTile, Occupant.None];
+                        }
+                        break;
+                    default:
+                        return [thisTile, Occupant.None];
                 }
-            }
+                break;
+
+            case Tile.Water:
+                return [thisTile, Occupant.None];
+                break;
+
+            case Tile.Rock:
+                return [thisTile, Occupant.None];
+                break;
+
+            case Tile.Dirt:
+                if (tileSums[Tile.Water] + tileSums[Tile.WetDirt] > 0) {
+                    return [Tile.WetDirt, thisOcpt];
+                }
+
+                switch (thisOcpt) {
+                    case Occupant.Droplet:
+                        return [Tile.WetDirt, Occupant.None];
+                    default:
+                        return [thisTile, Occupant.None];
+                }
+
+                break;
+
+            case Tile.WetDirt:
+                if (tileSums[Tile.Water] + tileSums[Tile.WetDirt] === 0) {
+                    return [Tile.Dirt, thisOcpt];
+                }
+
+                switch (thisOcpt) {
+                    case Occupant.None:
+                        if (ocptSums[Occupant.Flower] > 0) {
+                            return [thisTile, Occupant.Flower];
+                        }
+                        break;
+                    case Occupant.Flower:
+                        return [thisTile, Occupant.Flower];
+                    default:
+                        return [thisTile, Occupant.None];
+                }
+                break;
+
+            case Tile.Sand:
+                return [thisTile, Occupant.None];
+                break;
+                
         }
+
+        // switch (thisOcpt) {
+        // case Occupant.None:
+        //     break;
+        // case Occupant.Flower:
+        //     if (![Tile.Grass, Tile.WetDirt].includes(thisTile)) {
+        //         return [thisTile, Occupant.None];
+        //     }
+        //     else if (
+        //         thisTile === Tile.Grass && 
+        //         directTileSums[Tile.Water] === 0 &&
+        //         ocptSums[Occupant.Flower] > 1
+        //     ) {
+        //         return [thisTile, Occupant.None];
+        //     }
+        //     break;
+        // case Occupant.Stump:
+        // case Occupant.Tree:
+        // case Occupant.Stone:
+        // case Occupant.Rock:
+        // case Occupant.Tiki:
+        // case Occupant.Reeds1:
+        // case Occupant.Reeds2:
+        // case Occupant.Mushroom:
+        // case Occupant.Pillar:
+        // case Occupant.Invis:
+        // case Occupant.Marble:
+        // case Occupant.Lilypad:
+        // case Occupant.CornStalk:
+        // case Occupant.Cactus:
+        // case Occupant.Droplet:
+        //     return [thisTile, Occupant.None];
+        // case Occupant.Cross:
+        // case Occupant.Log:
+        // default:
+        //     break;
+        // }
 
         return [thisTile, thisOcpt];
     }
@@ -355,7 +480,6 @@ export default class Level extends State {
     render(context: CanvasRenderingContext2D, width: number, height: number) {
         super.render(context, width, height);
 
-
         // Draw the expected result
         context.save();
 
@@ -376,29 +500,34 @@ export default class Level extends State {
         // Draw the board
         context.imageSmoothingEnabled = false;
         context.save();
+        context.translate(0, 50);
         context.scale(this.scale, this.scale);
         this.tiles.forEach((row, y) => 
             row.forEach((tile, x) => {
                 this.tileHelper.draw(context, tile, x, y);
             })
         );
-        context.restore();
 
         this.ocpts.forEach((row, y) => row.forEach((obj, x) =>
             this.occupantHelper.draw(context, obj, x, y)));
+        context.restore();
 
         // Draw options
         context.save();
         context.translate(this.options_root.x, this.options_root.y);
         this.options.forEach((option, i) => {
-            const x = i * 1.25;
-            const y = 0 * 1.5;
+            if (!option.props.type) {
+                return;
+            }
+
+            const x = (i % 4) * 1.25;
+            const y = Math.floor(i / 4) * 1.5;
 
             if (option.props.type === 'Tile') {
                 this.tileHelper.draw(context, option.props.value as Tile, x, y);
             }
             else {
-                this.occupantHelper.draw(context, option.props.value as Occupant, i, y);
+                this.occupantHelper.draw(context, option.props.value as Occupant, x, y);
             }
 
             context.font = '24px Poiret One';
@@ -407,52 +536,57 @@ export default class Level extends State {
         });
         context.restore();
 
+        context.save()
         if (this.selectedOption >= 0) {
             const option = this.options[this.selectedOption].props as Option;
+            if (option) {
 
-            const tileX = Math.floor(this.game.mouse.x / (this.tile_size * this.scale));
-            const tileY = Math.floor(this.game.mouse.y / (this.tile_size * this.scale));
-            if (tileX >= 0 &&
-                tileY >= 0 &&
-                tileX < this.size.x &&
-                tileY < this.size.y
-            ) {
-                context.save();
-                context.scale(this.scale, this.scale);
-                if (option.type === 'Tile') {
-                    this.tileHelper.draw(
-                        context,
-                        option.value as Tile,
-                        tileX,
-                        tileY
-                    );
+                const tileX = Math.floor(this.game.mouse.x / (this.tile_size * this.scale));
+                const tileY = Math.floor((this.game.mouse.y - 50) / (this.tile_size * this.scale));
+                if (tileX >= 0 &&
+                    tileY >= 0 &&
+                    tileX < this.size.x &&
+                    tileY < this.size.y
+                ) {
+                    context.save();
+                    context.translate(0, 50);
+                    context.scale(this.scale, this.scale);
+                    if (option.type === 'Tile') {
+                        this.tileHelper.draw(
+                            context,
+                            option.value as Tile,
+                            tileX,
+                            tileY
+                        );
+                    }
+                    else {
+                        this.occupantHelper.draw(
+                            context,
+                            option.value as Occupant,
+                            tileX,
+                            tileY
+                        );
+                    }
+                    context.restore();
                 }
                 else {
-                    this.occupantHelper.draw(
-                        context,
-                        option.value as Occupant,
-                        tileX,
-                        tileY
-                    );
+                    if (option.type === 'Tile') {
+                        this.tileHelper.draw(
+                            context,
+                            option.value as Tile,
+                            this.game.mouse.x / this.tile_size,
+                            this.game.mouse.y / this.tile_size
+                        );
+                    }
+                    else {
+                        this.occupantHelper.draw(
+                            context,
+                            option.value as Occupant,
+                            this.game.mouse.x / this.tile_size,
+                            this.game.mouse.y / this.tile_size
+                        );
+                    }
                 }
-                context.restore();
-            }
-
-            if (option.type === 'Tile') {
-                this.tileHelper.draw(
-                    context,
-                    option.value as Tile,
-                    this.game.mouse.x / this.tile_size,
-                    this.game.mouse.y / this.tile_size
-                );
-            }
-            else {
-                this.occupantHelper.draw(
-                    context,
-                    option.value as Occupant,
-                    this.game.mouse.x / this.tile_size,
-                    this.game.mouse.y / this.tile_size
-                );
             }
         }
 

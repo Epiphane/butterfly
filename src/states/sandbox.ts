@@ -9,6 +9,8 @@ import { Tile } from "../helpers/tile";
 export default class SandboxLevel extends Level {
     constructor() {
         super(1, new Point(15));
+
+        this.name.set({ text: 'Sandbox' });
     }
 
     fillMap() {
@@ -34,8 +36,48 @@ export default class SandboxLevel extends Level {
                 count: 100
             },
             {
+                type: 'Occupant',
+                value: Occupant.Flower,
+                count: 100
+            },
+            {
                 type: 'Tile',
-                value: Tile.Flower,
+                value: Tile.Dirt,
+                count: 100
+            },
+            {
+                type: 'Tile',
+                value: Tile.WetDirt,
+                count: 100
+            },
+            {
+                type: 'Tile',
+                value: Tile.Sand,
+                count: 100
+            },
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            {
+                type: 'Occupant',
+                value: Occupant.Pillar,
+                count: 100
+            },
+            {
+                type: 'Occupant',
+                value: Occupant.Tree,
+                count: 100
+            },
+            {
+                type: 'Occupant',
+                value: Occupant.WheatSeed,
+                count: 100
+            },
+            {
+                type: 'Occupant',
+                value: Occupant.Droplet,
                 count: 100
             },
         ];

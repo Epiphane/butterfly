@@ -4,6 +4,7 @@ export enum Occupant {
     WheatSprout,
     WheatGrowing,
     Wheat,
+    Flower,
     Stump,
     Tree,
     Stone,
@@ -20,6 +21,8 @@ export enum Occupant {
     Cross,
     Cactus,
     Log,
+    Droplet,
+    Kill,
 };
 
 type OccupantInfo = {
@@ -51,6 +54,9 @@ const OccupantData : { [key in Occupant]: OccupantInfo } = {
     [Occupant.Cross]:           { block: 1, offset: [5, 5], size: [1, 2] },
     [Occupant.Cactus]:          { block: 2, offset: [6, 5], size: [2, 2] },
     [Occupant.Log]:             { block: 0, offset: [7, 1] },
+    [Occupant.Droplet]:         { block: 0, offset: [7, 2] },
+    [Occupant.Flower]:          { block: 1, offset: [7, 3] },
+    [Occupant.Kill]:            { block: 0, offset: [7, 4] },
 };
 
 export class OccupantHelper {

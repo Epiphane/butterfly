@@ -1,16 +1,22 @@
 export enum Tile {
     Grass = 0,
-    Flower,
+    // Flower,
     Water,
     Rock,
+    Dirt,
+    WetDirt,
+    Sand,
     Count,
 }
 
 const TileOffset: { [key in Tile]: [number, number] } = {
     [Tile.Grass]: [0, 0],
-    [Tile.Flower]: [3, 0],
+    // [Tile.Flower]: [3, 0],
     [Tile.Water]: [4, 1],
     [Tile.Rock]: [0, 13],
+    [Tile.Dirt]: [0, 4],
+    [Tile.WetDirt]: [0, 3],
+    [Tile.Sand]: [0, 2],
     [Tile.Count]: [-1, -1],
 };
 
