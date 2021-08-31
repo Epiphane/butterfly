@@ -317,14 +317,16 @@ export default class Level extends State {
 
                 switch (thisOcpt) {
                     case Occupant.None:
-                        if (tileSums[Tile.Water] > 0 &&
-                            ocptSums[Occupant.Flower] < 3) {
+                        if (
+                            (tileSums[Tile.Water] > 0 && ocptSums[Occupant.Flower] < 3)// ||
+                            // ocptSums[Occupant.Flower] === 3
+                        ) {
                             return [thisTile, Occupant.Flower];
                         }
                         break;
                     case Occupant.Flower:
                         if (tileSums[Tile.Water] === 0 ||
-                            ocptSums[Occupant.Flower] > 3) {
+                            (ocptSums[Occupant.Flower] > 3) {//} || (ocptSums[Occupant.Flower] + tileSums[Tile.Water]) < 2)) {
                             return [thisTile, Occupant.None];
                         }
                         break;

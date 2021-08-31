@@ -62,12 +62,12 @@ export default class SandboxLevel extends Level {
             undefined,
             {
                 type: 'Occupant',
-                value: Occupant.Pillar,
+                value: Occupant.Kill,
                 count: 100
             },
             {
                 type: 'Occupant',
-                value: Occupant.Tree,
+                value: Occupant.Flower,
                 count: 100
             },
             {
