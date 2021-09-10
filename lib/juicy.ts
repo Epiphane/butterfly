@@ -1,7 +1,7 @@
 /* -------------------- Animation frames ----------------- */
 window.requestAnimationFrame = (function () {
     return window.requestAnimationFrame ||
-        window.webkitRequestAnimationFrame ||
+        (window as any).webkitRequestAnimationFrame ||
         (window as any).mozRequestAnimationFrame ||
         (window as any).oRequestAnimationFrame ||
         (window as any).msRequestAnimationFrame ||

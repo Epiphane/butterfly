@@ -326,7 +326,7 @@ export default class Level extends State {
                         break;
                     case Occupant.Flower:
                         if (tileSums[Tile.Water] === 0 ||
-                            (ocptSums[Occupant.Flower] > 3) {//} || (ocptSums[Occupant.Flower] + tileSums[Tile.Water]) < 2)) {
+                            (ocptSums[Occupant.Flower] > 3)) {//} || (ocptSums[Occupant.Flower] + tileSums[Tile.Water]) < 2)) {
                             return [thisTile, Occupant.None];
                         }
                         break;

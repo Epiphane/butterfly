@@ -20,7 +20,7 @@ export default class LoadingScreen extends State {
             size: 72,
             font: 'Poiret One'
         }).then(() => {
-            text.position.x = (Game.width - text.width) / 2;
+            text.position.x = (Game.size.x - text.width) / 2;
             text.position.y = 20;
         });
     }
