@@ -37,6 +37,7 @@ export default class Level extends State {
     options_root = new Point(625, 400);
     options: Entity[] = [];
     selectedOption: number = -1;
+    selectedDragging: boolean = false;
 
     counter = new Entity(this, 'Counter', [TextComponent]);
     gen = 0;
@@ -181,18 +182,12 @@ export default class Level extends State {
 
         const options = this.getOptions();
         options.forEach((option, i) => {
-            const entity = new Entity(this, `Option ${i}`, [ButtonComponent]);
+            const entity = new Entity(this, `Option ${i}`);
             entity.position.x = this.options_root.x + (i * 1.25) * this.tile_size;
             entity.position.y = this.options_root.y + (i * 1.5) * this.tile_size;
             entity.width = this.tile_size;
             entity.height = this.tile_size;
             entity.props = { ...option };
-
-            entity.get(ButtonComponent)?.onClick(() => {
-                if (entity.props.count > 0) {
-                    this.selectedOption = i;
-                }
-            });
 
             this.options.push(entity);
         });
@@ -219,9 +214,7 @@ export default class Level extends State {
         })
     }
 
-    click(pos: Point) {
-        super.click(pos);
-
+    placeTile(pos: Point) {
         const tileX = Math.floor(pos.x / (this.tile_size * this.scale));
         const tileY = Math.floor((pos.y - 50) / (this.tile_size * this.scale));
         if (
@@ -250,6 +243,37 @@ export default class Level extends State {
                     this.selectedOption = -1;
                 }
             }
+        }
+    }
+
+    click(pos: Point) {
+        if (this.selectedOption >= 0) {
+            this.placeTile(pos);
+        }
+        else {
+            this.options.forEach((option, i) => {
+                if (option.contains(pos)) {
+                    this.selectedOption = i;
+                    this.selectedDragging = false;
+                }
+            });
+        }
+    }
+
+    dragstart(pos: Point) {
+        this.options.forEach((option, i) => {
+            if (option.contains(pos)) {
+                this.selectedOption = i;
+                this.selectedDragging = true;
+            }
+        })
+    }
+
+    dragend(pos: Point) {
+        if (this.selectedOption >= 0 && this.selectedDragging) {
+            this.placeTile(pos);
+            this.selectedOption = -1;
+            this.selectedDragging = false;
         }
     }
 

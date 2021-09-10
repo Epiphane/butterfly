@@ -21,9 +21,11 @@ export class ButtonComponent extends Component {
         }
     }
 
-    click(pos: Point) {
-        this.callback(pos);
-        document.body.style.cursor = 'default';
-        this.hovering = false;
+    mouseup(pos: Point) {
+        if (this.entity.active) {
+            this.callback(pos);
+            document.body.style.cursor = 'default';
+            this.hovering = false;
+        }
     }
 };

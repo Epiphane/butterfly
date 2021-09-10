@@ -119,18 +119,20 @@ class Game {
         SetCanvasSize(this.canvas, this.size.x, this.size.y);
 
         let startDrag: MouseEvent | undefined;
+        let dragging = false;
         canvas.onmousedown = (evt: MouseEvent) => {
-            startDrag = evt;
-            this.triggerAtPos('dragstart', evt);
+            this.triggerAtPos('mousedown', evt);
+            if (!startDrag) {
+                startDrag = evt;
+            }
         };
         canvas.onmouseup = (evt: MouseEvent) => {
+            this.triggerAtPos('mouseup', evt);
             if (!startDrag) {
                 return;
             }
-            var startPos = this.getCanvasCoords(startDrag);
-            var endPos   = this.getCanvasCoords(evt);
 
-            if (startPos.sub(endPos).length() <= 5) {
+            if (!dragging) {
                 this.triggerAtPos('click', evt);
             }
             else {
@@ -138,12 +140,22 @@ class Game {
             }
 
             startDrag = undefined;
+            dragging = false;
         };
         canvas.onmousemove = (evt: MouseEvent) => {
+            this.triggerAtPos('mousemove', evt);
             this.mouse = this.getCanvasCoords(evt);
 
-            if (startDrag) {
+            if (dragging) {
                 this.triggerAtPos('drag', evt);
+            }
+            else if (startDrag) {
+                var startPos = this.getCanvasCoords(startDrag);
+                var endPos   = this.getCanvasCoords(evt);
+                if (startPos.sub(endPos).length() >= 5) {
+                    this.triggerAtPos('dragstart', startDrag);
+                    dragging = true;
+                }
             }
         }
 
@@ -388,11 +400,21 @@ export class State {
         }
     }
 
-    click(pos: Point) {
+    mousedown(pos: Point) {
         this.entities.forEach(e => {
             if (e.contains(pos)) {
-                e.click(pos);
+                e.active = true;
+                e.mousedown(pos);
             }
+        });
+    }
+
+    mouseup(pos: Point) {
+        this.entities.forEach(e => {
+            if (e.contains(pos)) {
+                e.mouseup(pos);
+            }
+            e.active = false;
         });
     }
 };
@@ -422,6 +444,7 @@ export class Entity {
     scale: Point = new Point(1);
     width: number = 0;
     height: number = 0;
+    active: boolean = false;
 
     components: Component[] = [];
     updated: boolean[] = [];
@@ -531,8 +554,12 @@ export class Entity {
         this.children.push(child);
     }
 
-    click(pos: Point) {
-        this.components.forEach(c => c.click(pos));
+    mousedown(pos: Point) {
+        this.components.forEach(c => c.mousedown(pos));
+    }
+
+    mouseup(pos: Point) {
+        this.components.forEach(c => c.mouseup(pos));
     }
 
     update<C extends Component>(dt: number, constructor?: (new () => C)) {
@@ -600,7 +627,8 @@ export class Component {
     entity!: Entity;
 
     init(e: Entity) { }
-    click(pos: Point) {}
+    mousedown(pos: Point) {}
+    mouseup(pos: Point) {}
     update(dt: number, game: Game) { }
     render(context: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) { }
 }
